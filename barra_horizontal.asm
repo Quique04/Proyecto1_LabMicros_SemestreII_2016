@@ -143,6 +143,10 @@ section .data
 
 segment .bss                                    ;Aun no es necesario
         dato_ent: resb 1
+	pos_barra_uni: resb 1
+	pos_barra_dec: resb 1
+	salida: resb 1
+	barra_f: resb 1
 
 ;----------------------------------Segmento de Codigo---------------------------
 section .text
@@ -222,27 +226,28 @@ ret					;Final del procedimiento 'Proc_GetKey'
 
 Proc_DecoKey:				;Procedimiento para determinar que tecla se obtuvo
 					;se debe ejecutar inmediatamente despues de Proc_GetKey si se obtuvo el valor de una tecla
-	cmp dword [dato_ent], 99
+	cmp byte [dato_ent], 99
 	jz tecla_c			;se mueve hacia la izquierda
 
-	cmp dword [dato_ent], 122
+	cmp byte [dato_ent], 122
 	jz tecla_z			;se mueve hacia la derecha
 
-	cmp dword [dato_ent], 32			;sale del ciclo '_ciclo_juego';32 => space
+	cmp byte [dato_ent], 32			;sale del ciclo '_ciclo_juego';32 => space
 	jz tecla_space
 
 	jnz Continue
 
 tecla_c:
-	Sumar_Barra r13, r14
+	Sumar_Barra byte [pos_barra_dec], byte [pos_barra_uni]
 	jmp Continue
 
 tecla_z:
-	Restar_Barra r13, r14
+	Restar_Barra byte [pos_barra_dec], byte [pos_barra_uni]
 	jmp Continue
 
 tecla_space:
-	mov r10, 25			;25 se escogio al azar, cuando r10 tenga este valor se sale del juego
+	;25 se escogio al azar, cuando [salida] tenga este valor se sale del juego
+	mov byte [salida], 25
 	jmp Continue
 
 Continue:
@@ -251,9 +256,17 @@ ret
 
 Proc_ImprimeBarra:			;Procedimiento para imprimir la barra movil
 					;llama al macro Escribir luego de modificar los valores del string 'barra_horiz_pos'
-	mov [barra_horiz_pos + 0x5], r13
-	mov [barra_horiz_pos + 0x6], r14
+	push r15
+	mov r15, [pos_barra_dec]
+	mov [barra_horiz_pos + 0x5], r15
+
+	mov r15, [pos_barra_uni]
+	mov [barra_horiz_pos + 0x6], r15
+
+	mov r15, [barra_f]
 	mov [barra_horiz_pos + 0x7], r15
+	pop r15
+
 	Escribir barra_horiz_pos, barra_horiz_pos_tam
 	Escribir barra_horiz, barra_horiz_tam
 	Escribir final_marco, final_marco_tam
@@ -354,10 +367,13 @@ write_stdin_termios:
 
 ;---------Rutina Principal------
 _start:
-	mov r10, 5
-	mov r13, 49
-	mov r14, 49
-	mov r15, 102
+	mov byte [salida], 5
+
+	mov byte [pos_barra_dec], 49
+
+	mov byte [pos_barra_uni], 49
+
+	mov byte [barra_f], 102
 
 	call canonical_off
 	call echo_off
@@ -376,9 +392,7 @@ _ciclo_juego:
 
 	;Seccion para tomar la tecla presionada en el teclado
 	call Proc_GetKey
-	mov r12, [dato_ent]
 
-_parada:
 	;Comparar para saber si se debe hacer una decodificacion de la tecla
 	;o si se debe seguir con el programa
 	call Proc_DecoKey
@@ -387,7 +401,7 @@ _parada:
         call Proc_ImprimeBarra
 
 	;Determinar si se sigue o no en el juego, se sale si r10 != 25
-	cmp r10, 25
+	cmp byte [salida], 25
 	jz _salir
 	jnz _ciclo_juego
 
