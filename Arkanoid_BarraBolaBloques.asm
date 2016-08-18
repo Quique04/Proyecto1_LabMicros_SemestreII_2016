@@ -23,12 +23,12 @@
 
 
 %macro Sumar_Barra 2
-        cmp %2, 56      ;54 => ascii decimal para '6'; compara unidades(posicion vs limite);%2 = pos_barra_uni
+        cmp %2, 52      ;54 => ascii decimal para '6'; compara unidades(posicion vs limite);%2 = pos_barra_uni
         jz comp_dec_lim
         jnz comp_uni_tope       ;tope => 9
 
 comp_dec_lim:
-        cmp %1, 50              ;50 => ascii decimal para '2'; compara decenas(posicion vs limite);%1 = pos_barra_dec
+        cmp %1, 54              ;50 => ascii decimal para '2'; compara decenas(posicion vs limite);%1 = pos_barra_dec
         jz final_macro_suma	;llego al tope, no hace nada
         jnz suma_1_uni
 
@@ -263,7 +263,7 @@ LborraBloque: equ $-borraBloque
 barra_horiz_pos: db 27,"[32;10f ","------"			;se debe dejar el '-----'
 barra_horiz_pos_tam: equ $-barra_horiz_pos
 
-barra_horiz: db "o===o"
+barra_horiz: db "o======o"
 barra_horiz_tam: equ $-barra_horiz
 
 
@@ -414,7 +414,7 @@ cmp_pos_ini:
 	ja pierde_vida
 
 cmp_pos_fin:
-	add r12, 5
+	add r12, 8
 	cmp r12, r13
 	jae rebote
 	jb pierde_vida
@@ -466,6 +466,8 @@ canonical_off:
         mov eax, ICANON
         not eax
         and [termios+12], eax
+	mov byte [termios + 23], 0
+	mov byte [termios + 24], 0
         pop rax
 
         call write_stdin_termios
@@ -622,7 +624,7 @@ escribe borrar, borrarl;-----------------borra la consola--------------------
 
 ;*******************************************Pantalla 2******************************************************************
 call canonical_off
-call echo_on
+call echo_off
 
 ;deteccion de teclass----------------------------------------
 call bloques
@@ -668,8 +670,8 @@ inicio:
 	jnz inicio
 
 	escribe SinCursor,SinCursorT
-call canonical_on
-call echo_on
+	;call canonical_on
+	;call echo_on
 
 ;-------------------SE DERTERMINA LOS VALORES INICIALES DE LA POSICION DE LA BOLA
 
@@ -694,28 +696,12 @@ call echo_on
 ;---------------- SE DEFINEN REGISTROS PARA LA DIRECCION DE LA BOLA
 
 	mov r8,0				; 0 derecha 1 izquierda
-	mov r14,1				; 0 abajo 1 arriba 
+	mov r14,1				; 0 abajo 1 arriba
 
 ;------------SE EMPIEZA EL MOVIMIENDO DE LA BOLA
 
 movimiento:
 ;-----antes de mover la bola tenemos que definir su direccion
-
-	call canonical_off
-	call echo_off
-
-	;Seccion para tomar la tecla presionada en el teclado
-	call Proc_GetKey
-
-	;Comparar para saber si se debe hacer una decodificacion de la tecla
-	;o si se debe seguir con el programa
-	call Proc_DecoKey
-
-	;Escribir la barra horizontal con los parametros modificados
-        call Proc_ImprimeBarra
-
-	call cmpBolaBloque1
-	call Proc_ComparaPosicion
 
 	call direccion ;ver seccion de direccion
 
@@ -727,7 +713,7 @@ movimiento:
 	mov r15,59 					    ; caracter " ; " ascii
 	mov [cursorPos + 0x2],r10 	    ; decena de la coodenada n
 	mov [cursorPos + 0x3],r9		; unidad de la coodenada n
-	mov [cursorPos + 0x4],r15		; 
+	mov [cursorPos + 0x4],r15		;
 	mov [cursorPos + 0x5],r13		; decena de la coodenada m
 	mov [cursorPos + 0x6],r12		; unidad de la coodenada m
 
@@ -738,7 +724,7 @@ movimiento:
 
 	escribe cursorPos,cursorPosT
 
-;-----una ves en la posicion deseada imprime la bola 
+;-----una ves en la posicion deseada imprime la bola
 
 
 	escribe bola,bolaT
@@ -756,11 +742,22 @@ cicloFor:
 
 	escribe cursorPos,cursorPosT
 
-
 	escribe borrarBola,borrarBolaT
 
-	call canonical_on 
-	call echo_on 
+
+        ;Seccion para tomar la tecla presionada en el teclado
+        call Proc_GetKey
+
+        ;Comparar para saber si se debe hacer una decodificacion de la tecla
+        ;o si se debe seguir con el programa
+        call Proc_DecoKey
+
+        ;Escribir la barra horizontal con los parametros modificados
+        call Proc_ImprimeBarra
+
+        call cmpBolaBloque1
+        call Proc_ComparaPosicion
+        mov byte [dato_ent], 0
 
 	jmp movimiento							; vuelvo a cambiar las posiciones
 
@@ -1207,4 +1204,3 @@ Y_DDD:
 		call cambioDirDown
 		s9:
 		ret ;sumamente IMPORTANTE
-
