@@ -260,10 +260,10 @@ borraBloque: db "                       ", 27,'[23D', 27,'[1B'," ",27,'[1B',27,'
 LborraBloque: equ $-borraBloque
 
 
-barra_horiz_pos: db 27,"[32;10f ","------"			;se debe dejar el '-----'
+barra_horiz_pos: db 27,"[38;20f "			;se debe dejar el '-----'
 barra_horiz_pos_tam: equ $-barra_horiz_pos
 
-barra_horiz: db "o======o"
+barra_horiz: db "   o======o   "
 barra_horiz_tam: equ $-barra_horiz
 
 
@@ -610,7 +610,7 @@ mov byte [barra_f], 102
 
 mov byte [altura_barra_dec], 0x33
 
-mov byte [altura_barra_uni], 0x32
+mov byte [altura_barra_uni], 0x38
 
 escribe borrar, borrarl;-----------------borra la consola--------------------
 call marco
