@@ -1,3 +1,5 @@
+;-----------------------------------Seccion de Macros---------------------------------
+
 %macro escribe 2;----------------macro para proseso de escritura
 mov rax, 1; sys_write
 mov rdi, 1; consala_predeterminda
@@ -6,14 +8,18 @@ mov rdx, %2; parametro 2
 syscall; syscall
 %endmacro
 
+;-------------------------------------------------------------------------------------
+
 %macro salir 0
  mov rax, 60
  mov rdi,0
  syscall
 %endmacro
 
+;-------------------------------------------------------------------------------------
+
 %macro Sumar_Barra 2
-        cmp %2, 56      ;54 => ascii decimal para '6'; compara unidades(posicion vs limite);%2 = pos_barra_uni
+        cmp %2, 56      ;56 => ascii decimal para '8'; compara unidades(posicion vs limite);%2 = pos_barra_uni
         jz comp_dec_lim
         jnz comp_uni_tope       ;tope => 9
 
@@ -39,6 +45,8 @@ suma_1_dec:
 final_macro_suma:
 %endmacro
 
+;-------------------------------------------------------------------------------------
+
 %macro Restar_Barra 2
         cmp %1, 48      	;48 => ascii decimal para '0'; compara decenas(posicion vs tope);%1 = pos_barra_dec
         jz comp_uni_tope_resta       ;pregunta si %1 es igual a '0'
@@ -62,10 +70,9 @@ resta_1_dec:
 
 final_macro_resta:
 %endmacro
+;-------------------------------------------------------------------------------------
 
-
-
-
+;---------------------------Segmento de Variables y Constantes------------------------
 segment .data
 termios:        times 36 db 0
 stdin:          equ 0
@@ -153,7 +160,6 @@ barra_horiz_pos_tam: equ $-barra_horiz_pos
 barra_horiz: db "o=======o"
 barra_horiz_tam: equ $-barra_horiz
 
-
 ;------------- LIMITES DE LA PANTALLA DONDE LA BOLA REBOTA------
 
 RightU: equ 51                         ; todos los valores en Ascii
@@ -167,6 +173,8 @@ UpU: equ 50          ;73,2                                      73,52;
 UpD: equ 48          ;-----------------------------------------------;
 
 
+;-------------------------------------------------------------------------------------
+
 segment .bss; seccion de varaibles
 res resb 255; variable donde se aloja el nombre de la personas tiene un Tamanao de 255 bits
 nom1 resb 32
@@ -175,11 +183,11 @@ nombre resb 10
 ingreso resb 1
 
 
-	dato_ent: resb 1
-	pos_barra_uni: resb 1
-	pos_barra_dec: resb 1
-	salida: resb 1
-	barra_f: resb 1
+dato_ent: resb 1
+pos_barra_uni: resb 1
+pos_barra_dec: resb 1
+salida: resb 1
+barra_f: resb 1
 
 vidas_jugador: resb 1
 aux: resb 1
@@ -195,6 +203,9 @@ b9: resb 1
 control: resb 1
 amit: resb 1
 
+;--------------------------------Segmento de Codigo-----------------------------------
+
+;-----------------------Etiquetas Globales-------------------------
 segment .text
 
 	global _start
@@ -202,6 +213,10 @@ segment .text
 	global _pausa2
 	global _pausa3
 
+;-----------------------Procedimientos-------------------------
+
+
+;----------------Configuracion de la Consola-------------------
 canonical_off:
         call read_stdin_termios
 
@@ -210,12 +225,13 @@ canonical_off:
         mov eax, ICANON
         not eax
         and [termios+12], eax
-        ;mov byte[termios+23],0
-        ;mov byte [termios+24],0
+        mov byte[termios+23],0
+        mov byte [termios+24],0
         pop rax
 
         call write_stdin_termios
         ret
+
 echo_off:
         call read_stdin_termios
 
@@ -228,6 +244,7 @@ echo_off:
 
         call write_stdin_termios
         ret
+
 canonical_on:
         call read_stdin_termios
 
@@ -236,6 +253,7 @@ canonical_on:
 
         call write_stdin_termios
         ret
+
 echo_on:
         call read_stdin_termios
 
@@ -244,6 +262,7 @@ echo_on:
 
         call write_stdin_termios
         ret
+
 read_stdin_termios:
         push rax
         push rbx
@@ -261,6 +280,7 @@ read_stdin_termios:
         pop rbx
         pop rax
         ret
+
 write_stdin_termios:
         push rax
         push rbx
@@ -279,6 +299,8 @@ write_stdin_termios:
         pop rax
         ret
 
+;----------------Lectura del teclado-------------------
+
 Proc_GetKey:				;Subrutina para obtener el codigo de la
 	mov byte[dato_ent],0				;tecla presionada (si se presiono alguna)
 	mov rax, 0				;rax = "sys_read"
@@ -287,7 +309,8 @@ Proc_GetKey:				;Subrutina para obtener el codigo de la
 	mov rdx, 1				;rdx = 1 =>  cuantos eventos o teclazos capturar
 	syscall
 ret					;Final del procedimiento 'Proc_GetKey'
-;-----------------------------------------------------
+
+;-----------Decodificacion de las teclas---------------
 
 Proc_DecoKey:				;Procedimiento para determinar que tecla se obtuvo
 					;se debe ejecutar inmediatamente despues de Proc_GetKey si se obtuvo el valor de una tecla
@@ -318,6 +341,7 @@ tecla_space:
 Continue:
 ret
 
+;----------------Imprimir la Barra-------------------
 
 Proc_ImprimeBarra:			;Procedimiento para imprimir la barra movil
 					;llama al macro Escribir luego de modificar los valores del string 'barra_horiz_pos'
@@ -335,11 +359,12 @@ Proc_ImprimeBarra:			;Procedimiento para imprimir la barra movil
 	escribe barra_horiz_pos, barra_horiz_pos_tam
 	escribe barra_horiz, barra_horiz_tam
 ret
-;-------------------------------------------------------
+
+;-----------Ciclo de movimiento de la barra--------------
 
 ciclo_barra:
 
-	call Proc_ImprimeBarra
+	;call Proc_ImprimeBarra
 
 	;Seccion para tomar la tecla presionada en el teclado
 	call Proc_GetKey
@@ -347,22 +372,27 @@ ciclo_barra:
 	;Comparar para saber si se debe hacer una decodificacion de la tecla
 	;o si se debe seguir con el programa
 	call Proc_DecoKey
+	
 	call Proc_ImprimeBarra
 
 ret
 
+;------------Pantalla Para Iniciar el Juego---------------
+
 Play:
-    escribe Bienvenida,L_Bienvenida
-    call canonical_off
-    call echo_off
-        mov dword[ingreso],0
-        mov rsi, ingreso
-        call leetecla
-        cmp dword[ingreso],0x78
-        jnz Play
-    call canonical_on
-    call echo_on
-    ret
+    	escribe Bienvenida,L_Bienvenida
+	call canonical_off
+    	call echo_off
+    	mov dword[ingreso],0
+    	mov rsi, ingreso
+    	call leetecla
+    	cmp dword[ingreso],0x78
+    	jnz Play
+    	call canonical_on
+    	call echo_on
+ret
+
+;------------Procedimiento para leer teclado---------------
 
 leetecla:; rutina de lectura de teclado
     mov rax, 0; sys_read
@@ -371,6 +401,8 @@ leetecla:; rutina de lectura de teclado
     syscall
     ret; se usa para volver a la rutina
 
+;---------Procedimiento para pintar el marco------------
+
 marco:
 	escribe lineaHorizontalSup, L_H_S
 	escribe lineaHorizontalInf, L_H_I
@@ -378,6 +410,8 @@ marco:
 	escribe LDer,LDerl
 	
 ret
+
+;--------Procedimiento para pantalla inicial-----------
 
 Inicio: 
 
@@ -390,6 +424,7 @@ Inicio:
     	call leetecla;
 	ret
 
+;---------Procedimiento para pintar los bloques----------
 
 bloques:
     ;escribe borraPan,borraPanT
@@ -414,6 +449,9 @@ bloques:
     ret
 
 
+;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;--------------------------------------------Procedimiento para mover la bola--------------------------------------
+
 movimiento:
 ;-----antes de mover la bola tenemos que definir su direccion
 	call direccion ;ver seccion de direccion
@@ -422,25 +460,25 @@ movimiento:
 ; Se le asignan los valores iniciales(y los que le siguen) de la posicion de la bola a su variable, estos valores
 ; van cambiando con el tiempo, en cada ciclo es diferente
 
-
-	mov r15,59 					    ; caracter " ; " ascii
-	mov [cursorPos + 0x2],r10 	    ; decena de la coodenada n
+	mov r15,59 				; caracter " ; " ascii
+	mov [cursorPos + 0x2],r10 	    	; decena de la coodenada n
 	mov [cursorPos + 0x3],r9		; unidad de la coodenada n
 	mov [cursorPos + 0x4],r15		; 
 	mov [cursorPos + 0x5],r13		; decena de la coodenada m
 	mov [cursorPos + 0x6],r12		; unidad de la coodenada m
 
-	mov r15,72						; caracter H final del string CursorPos
+	mov r15,72				; caracter H final del string CursorPos
 	mov [cursorPos + 0x7],r15		; lo muevo
 
 ;------Se mueve el cursor a las coordenadas asignadas en el segmento anterior
-
+	
 	escribe cursorPos,cursorPosT	
+
 ;-----una ves en la posicion deseada imprime la bola 
 
 	escribe bola,bolaT
 
-	mov rcx, 22777200 	; la velocidad de la bola en el juego
+	mov rcx, 22777200 			; la velocidad de la bola en el juego
 	
 ;!!!!NOTA!!!!: si se quisiera poner la dificulta en el juego cambiar la velocidad es una buena opcion 
 
@@ -449,246 +487,257 @@ movimiento:
 cicloFor:
 	loop cicloFor
 
-;---------una ves que se imprime la bola se tiene que borrar, entonces lo que se hace en imprimir un "  " encima
+;---------una vez que se imprime la bola se tiene que borrar, entonces lo que se hace en imprimir un "  " encima
 
 	escribe cursorPos,cursorPosT
 
 	escribe borrarBola,borrarBolaT
-	escribe jugador,Ljugador
-	escribe nombre, 10
+
 	escribe vidas,lvidas
 	escribe amit,2	
 
-	;call canonical_off
-	;call echo_off
-	call Proc_ImprimeBarra
-	;call canonical_on
-	;call echo_on
-	
-	;Seccion para tomar la tecla presionada en el teclado
-	call Proc_GetKey
-	;Comparar para saber si se debe hacer una decodificacion de la tecla
-	;o si se debe seguir con el programa
-	call Proc_DecoKey
-	
-	
-
-
-
+	;call ciclo_barra
 
 	jmp movimiento							; vuelvo a cambiar las posiciones
 
-	direccion:
-		call horizontal ;movimiento de derecha a izquierda y viceversa 
-		call vertical   ;movimiento de abajo a arriba y viceversa
-		ret
+;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		horizontal:
-			cmp r8,0						; para saber en que direccion r8 - 0 (la comparacion es una resta en el fondo)
-			je derecha						; Y si es igual a 0 la bola va a la derecha 
-			jmp izquierda					; salto sin condicion, porque si no se cumple el anterior si o si se da este salto
+;-----------------------------------Procedimiento para cambiar la direccion de la bola-----------------------------
+direccion:
+	call horizontal ;movimiento de derecha a izquierda y viceversa 
+	call vertical   ;movimiento de abajo a arriba y viceversa
+	ret
 
-		derecha:
-			cmp r13,RightD					; comparo el limite derecho de las Decenas a ver si coinside
-			je derecha1						; si son iguales tengo que comparar las Unidades del limite para tomar la desicion de direccion
-			call aumentoX					; Si aun no esta cerca del limite solo aumenta el eje X
-			ret
-		derecha1:
-			cmp r12,RightU					; comparo las unidades del limite derecho
-			je cambioDirI					; si son iguales tengo que cambiar a Izquierda la direccion
-			call aumentoX					; de lo contrario solo aumento el eje X
-			ret
+	horizontal:
+	cmp r8,0					; para saber en que direccion r8 - 0 (la comparacion es una resta en el fondo)
+	je derecha					; Y si es igual a 0 la bola va a la derecha 
+	jmp izquierda					; salto sin condicion, porque si no se cumple el anterior si o si se da este salto
 
-		cambioDirI:
-			mov r8,1						; cambio el r8 a un 1 que significa ir a la izq
-			call decrementox				; tengo que decrementar el X a la izquierda por que no puedo ir
-			ret								; mas a la derecha ya que estoy en el "limite"
+	derecha:
+	cmp r13,RightD					; comparo el limite derecho de las Decenas a ver si coinside
+	je derecha1			; si son iguales tengo que comparar las Unidades del limite para tomar la desicion de direccion
+	call aumentoX					; Si aun no esta cerca del limite solo aumenta el eje X
+	ret
+	
+	derecha1:
+	cmp r12,RightU					; comparo las unidades del limite derecho
+	je cambioDirI					; si son iguales tengo que cambiar a Izquierda la direccion
+	call aumentoX					; de lo contrario solo aumento el eje X
+	ret
 
-		izquierda:							; el r8 es = a 1
-			cmp r13,LeftD					; comparo limite izq Decimal
-			je izquierdaI					; para ir a comparar las unidades del limite si las decenas son iguales
-			call decrementox				; si no son iguales solo me muevo a la izq	
-			ret
+	cambioDirI:
+	mov r8,1						; cambio el r8 a un 1 que significa ir a la izq
+	call decrementox				; tengo que decrementar el X a la izquierda por que no puedo ir
+	ret								; mas a la derecha ya que estoy en el "limite"
 
-		izquierdaI:
-			cmp r12,LeftU					; comparo el limite izq unidades
-			je cambioDirD					; si estoy en el limite tengo que ir hacia la derecha
-			call decrementox				; si no estoy en el limite solo me muevo a la izq
-			ret
+	izquierda:							; el r8 es = a 1
+	cmp r13,LeftD					; comparo limite izq Decimal
+	je izquierdaI					; para ir a comparar las unidades del limite si las decenas son iguales
+	call decrementox				; si no son iguales solo me muevo a la izq	
+	ret
 
-		cambioDirD:
-			mov r8,0						; cambio el r8 a 0 que es derecha
-			call aumentoX					; voy para la derecha entonces incremento el X
-			ret
+	izquierdaI:
+	cmp r12,LeftU					; comparo el limite izq unidades
+	je cambioDirD					; si estoy en el limite tengo que ir hacia la derecha
+	call decrementox				; si no estoy en el limite solo me muevo a la izq
+	ret
 
-		vertical:							; funciona parecido que el eje X pero con el eje Y
-			cmp r14,0
-			je abajo
-			jmp arriba
+	cambioDirD:
+	mov r8,0						; cambio el r8 a 0 que es derecha
+	call aumentoX					; voy para la derecha entonces incremento el X
+	ret
 
-		abajo:
-			cmp r10,DownD
-			je abajoI
-			call aumentoY
-			ret
-		abajoI:
-			cmp r9,DownU
-			je cambioDirUp
-			call aumentoY
-			ret
+	vertical:							; funciona parecido que el eje X pero con el eje Y
+	cmp r14,0
+	je abajo
+	jmp arriba
 
-		cambioDirUp:
-			mov r14,1
-			call decrementoY
-			ret
+	abajo:
+	cmp r10,DownD
+	je abajoI
+	call aumentoY
+	ret
 
-		arriba:
-			cmp r10,UpD
-			je arribaI
-			call decrementoY
-			ret
+	abajoI:
+	cmp r9,DownU
+	je cambioDirUp
+	call aumentoY
+	ret
 
-		arribaI:
-			cmp r9,UpU
-			je cambioDirDown
-			call decrementoY
-			ret
+	cambioDirUp:
+	mov r14,1
+	call decrementoY
+	ret
 
-		cambioDirDown:
-			mov r14,0
-			call aumentoY
-			ret
+	arriba:
+	cmp r10,UpD
+	je arribaI
+	call decrementoY
+	ret
 
-		aumentoY:
-			add r9,1
-			cmp r9,58
-			jne retorno
-			call setZero
-		retorno:
-			ret
+	arribaI:
+	cmp r9,UpU
+	je cambioDirDown
+	call decrementoY
+	ret
 
-		setZero:
-			inc r10
-			cmp r10,58
-			jne resetZero
-			call setZero1
-		resetZero:
-			mov r9,48
-			ret
+	cambioDirDown:
+	mov r14,0
+	call aumentoY
+	ret
 
-		setZero1:
-			mov  r10,48
-			ret
+	aumentoY:
+	add r9,1
+	cmp r9,58
+	jne retorno
+	call setZero
 
-		decrementoY:
-			dec r9
-			cmp r9,47
-			jne retorno1
-			call setMax
-		retorno1:
-			ret
+	retorno:
+	ret
 
-		setMax:
-			dec r10
-			cmp r10,47
-			jne setNine
-			call setNine1
-		setNine:
-			mov r9,57
-			ret
+	setZero:
+	inc r10
+	cmp r10,58
+	jne resetZero
+	call setZero1
+	
+	resetZero:
+	mov r9,48
+	ret
 
-		setNine1:
-			mov  r10,57
-			ret
+	setZero1:
+	mov  r10,48
+	ret
 
-		aumentoX:
-			inc r12
-			cmp r12,58
-			jne retorno2
-			call setZero2
-		retorno2:
-			ret
+	decrementoY:
+	dec r9
+	cmp r9,47
+	jne retorno1
+	call setMax
 
-		setZero2:
-			inc r13
-			cmp r13,58
-			jne setZero5
-			call setZero3
+	retorno1:
+	ret
 
-		setZero5:
-			mov r12,48
-			ret
+	setMax:
+	dec r10
+	cmp r10,47
+	jne setNine
+	call setNine1
 
-		setZero3:
-			mov  r13,48
-			ret
+	setNine:
+	mov r9,57
+	ret
 
-		decrementox:
-			dec r12
-			cmp r12,47
-			jne retorno3
-			call setZero4
-		retorno3:
-			ret
+	setNine1:
+	mov  r10,57
+	ret
 
-		setZero4:
-			dec r13
-			cmp r13,47
-			jne setNine2
-			call setNine3
-		setNine2:
-			mov r12,57
-			ret
+	aumentoX:
+	inc r12
+	cmp r12,58
+	jne retorno2
+	call setZero2
 
-		setNine3:
-			mov  r13,57
-			ret
+	retorno2:
+	ret
 
+	setZero2:
+	inc r13
+	cmp r13,58
+	jne setZero5
+	call setZero3
 
+	setZero5:
+	mov r12,48
+	ret
+
+	setZero3:
+	mov  r13,48
+	ret
+
+	decrementox:
+	dec r12
+	cmp r12,47
+	jne retorno3
+	call setZero4
+
+	retorno3:
+	ret
+
+	setZero4:
+	dec r13
+	cmp r13,47
+	jne setNine2
+	call setNine3
+
+	setNine2:
+	mov r12,57
+	ret
+
+	setNine3:
+	mov  r13,57
+	ret
+
+;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+;-----------------------------------RUTINA PRINCIPAL---------------------------------------
 
 _start:
+
+mov r9, 53			; valores iniciales para imprimir la bola
+mov r10, 50			; linea 30
+mov r12, 53			; columna 42
+mov r13, 49
+	
+;---------------- SE DEFINEN REGISTROS PARA LA DIRECCION DE LA BOLA
+
+mov r8,0				; 0 abajo 1 arriba
+mov r14,0				; 0 derecha 1 izquierda
+
+;------------------- Valores Iniciales Para la Barra------------------
+
+mov byte [salida], 5
+
+mov byte [pos_barra_dec], 49
+
+mov byte [pos_barra_uni], 49
+
+mov byte [barra_f], 102
+
+;---------------------------------------------------------------------
 
 escribe SinCursor,SinCursorT
 escribe borraPan,borraPanT
 
-	mov r9, 53			; valores iniciales para imprimir la bola
-	mov r10, 50			; linea 30
-	mov r12, 53			; columna 42
-	mov r13, 49
-	
-;---------------- SE DEFINEN REGISTROS PARA LA DIRECCION DE LA BOLA
-
-	mov r8,0				; 0 abajo 1 arriba
-	mov r14,0				; 0 derecha 1 izquierda
-
-call Inicio ;Imprime Pantalla Inicial
+call Inicio				;Imprime Pantalla Inicial
 escribe borraPan,borraPanT
-call Play
 
-	
+;call Play				;Pantalla donde se espera el 'X'
+
+;-------------Pinta el marco y los bloques------------
 call marco
 call bloques
+call Proc_ImprimeBarra			;imprime la barra en la posicion inicial
 
-	mov byte [salida], 5
+;-----------escribe tambien el nombre del jugador-----
+escribe jugador,Ljugador
+escribe nombre, 10
 
-	mov byte [pos_barra_dec], 49
+;----------------apaga el modo canonico para entrar al movimiento de la bola y barra
+call canonical_off
+call echo_off
 
-	mov byte [pos_barra_uni], 49
-
-	mov byte [barra_f], 102
-
-;call canonical_off
-;call echo_off
+;---------------------mueve la bola y barra------------------------------
 call movimiento
 ;escribe borraPan,borraPanT
-;call bloques
+
 _salir:
-	call canonical_on
-	call echo_on
+;	call canonical_on
+;	call echo_on
 
-	mov rax, 60
-        mov rdi, 0
-        syscall
+;	mov rax, 60
+;	mov rdi, 0
+;	syscall
 
-	;Fin de la rutina principal
+;Fin de la rutina principal
 ;------------------------------
